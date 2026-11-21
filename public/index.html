@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Everything — Instant File &amp; Folder Search</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #f7f9fc;
+      --bg-hover: #e5f3ff;
+      --bg-selected: #cce8ff;
+      --border: #d0d7de;
+      --border-strong: #99a3ad;
+      --text: #1b1f23;
+      --text-muted: #57606a;
+      --menu-bg: #f3f3f3;
+      --toolbar-bg: #f8f9fa;
+      --status-bg: #f3f3f3;
+      --accent: #0066cc;
+      --highlight: #fff3a1;
+      --highlight-text: #000000;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+    }
+
+    body.dark {
+      --bg: #1e1e1e;
+      --bg-alt: #252526;
+      --bg-hover: #2a2d2e;
+      --bg-selected: #094771;
+      --border: #3c3c3c;
+      --border-strong: #555555;
+      --text: #e0e0e0;
+      --text-muted: #9da5b4;
+      --menu-bg: #2d2d2d;
+      --toolbar-bg: #252526;
+      --status-bg: #252526;
+      --accent: #3794ff;
+      --highlight: #614d00;
+      --highlight-text: #ffffff;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Menu Bar */
+    .menubar {
+      display: flex;
+      align-items: center;
+      background: var(--menu-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 2px 6px;
+      gap: 2px;
+      font-size: 12px;
+      position: relative;
+      z-index: 50;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      padding: 2px 8px 2px 4px;
+      color: var(--accent);
+    }
+
+    .menu-item {
+      position: relative;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    .menu-item:hover, .menu-item.open {
+      background: var(--bg-hover);
+    }
+
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 210px;
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow);
+      z-index: 100;
+      padding: 4px 0;
+      border-radius: 3px;
+    }
+
+    .menu-item.open .dropdown {
+      display: block;
+    }
+
+    .dropdown-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .dropdown-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .dropdown-item .check {
+      width: 16px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .dropdown-item .shortcut {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-left: 16px;
+    }
+
+    .dropdown-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    /* Search Toolbar */
+    .search-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-input-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 0 8px;
+      height: 28px;
+    }
+
+    .search-input-box:focus-within {
+      border-color: var(--accent);
+      outline: 1px solid var(--accent);
+    }
+
+    .search-input-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 0 4px;
+      display: none;
+    }
+
+    .clear-btn.visible {
+      display: block;
+    }
+
+    .clear-btn:hover {
+      color: var(--text);
+    }
+
+    .filter-select, .source-select {
+      height: 28px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 0 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .toggle-btn {
+      height: 28px;
+      padding: 0 8px;
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .toggle-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Table */
+    .table-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: var(--bg);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: var(--toolbar-bg);
+      z-index: 10;
+    }
+
+    th {
+      text-align: left;
+      padding: 5px 8px;
+      font-weight: 500;
+      font-size: 12px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th:hover {
+      background: var(--bg-hover);
+    }
+
+    th.sort-asc::after {
+      content: " ▲";
+      font-size: 10px;
+      color: var(--accent);
+    }
+
+    th.sort-desc::after {
+      content: " ▼";
+      font-size: 10px;
+      color: var(--accent);
+    }
+
+    td {
+      padding: 3px 8px;
+      font-size: 12.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-bottom: 1px solid transparent;
+    }
+
+    tbody tr:nth-child(even) {
+      background: var(--bg-alt);
+    }
+
+    tbody tr:hover {
+      background: var(--bg-hover);
+    }
+
+    tbody tr.selected {
+      background: var(--bg-selected);
+    }
+
+    .name-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .file-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .num-col {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    mark {
+      background: var(--highlight);
+      color: var(--highlight-text);
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    /* Status Bar */
+    .statusbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 10px;
+      background: var(--status-bg);
+      border-top: 1px solid var(--border);
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .status-left {
+      display: flex;
+      gap: 16px;
+    }
+
+    .status-right {
+      display: flex;
+      gap: 10px;
+    }
+
+    .mod-badge {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Context Menu */
+    .context-menu {
+      display: none;
+      position: fixed;
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow);
+      min-width: 180px;
+      z-index: 200;
+      padding: 4px 0;
+      border-radius: 3px;
+    }
+
+    .context-menu.visible {
+      display: block;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.visible {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow);
+      border-radius: 4px;
+      width: min(700px, 92vw);
+      max-height: 82vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 14px;
+      overflow: auto;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    .modal-body pre {
+      background: var(--bg-alt);
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow-x: auto;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      user-select: text;
+    }
+
+    .syntax-grid {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 6px 12px;
+    }
+
+    .syntax-code {
+      font-family: Consolas, monospace;
+      background: var(--bg-alt);
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Menu Bar -->
+  <div class="menubar" id="menubar">
+    <div class="app-brand">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      Everything
+    </div>
+
+    <div class="menu-item" data-menu="file">
+      File
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="exportCSV()"><span>Export to CSV...</span><span class="shortcut">Ctrl+S</span></div>
+        <div class="dropdown-item" onclick="reindex()"><span>Rescan Workspace</span><span class="shortcut">F5</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="edit">
+      Edit
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="copySelectedPath()"><span>Copy Full Path</span><span class="shortcut">Ctrl+Shift+C</span></div>
+        <div class="dropdown-item" onclick="copySelectedName()"><span>Copy Name</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="view">
+      View
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="toggleTheme()"><span class="check" id="chk-dark"></span><span>Dark Mode</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="setFilter('all')"><span class="check" id="chk-f-all">✓</span><span>Everything</span></div>
+        <div class="dropdown-item" onclick="setFilter('folder')"><span class="check" id="chk-f-folder"></span><span>Folders</span></div>
+        <div class="dropdown-item" onclick="setFilter('document')"><span class="check" id="chk-f-document"></span><span>Documents</span></div>
+        <div class="dropdown-item" onclick="setFilter('picture')"><span class="check" id="chk-f-picture"></span><span>Pictures</span></div>
+        <div class="dropdown-item" onclick="setFilter('audio')"><span class="check" id="chk-f-audio"></span><span>Audio</span></div>
+        <div class="dropdown-item" onclick="setFilter('video')"><span class="check" id="chk-f-video"></span><span>Video</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="search">
+      Search
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="toggleOpt('matchCase')"><span class="check" id="chk-case"></span><span>Match Case</span><span class="shortcut">Ctrl+I</span></div>
+        <div class="dropdown-item" onclick="toggleOpt('matchWhole')"><span class="check" id="chk-whole"></span><span>Match Whole Word</span><span class="shortcut">Ctrl+B</span></div>
+        <div class="dropdown-item" onclick="toggleOpt('matchPath')"><span class="check" id="chk-path"></span><span>Match Path</span><span class="shortcut">Ctrl+U</span></div>
+        <div class="dropdown-item" onclick="toggleOpt('useRegex')"><span class="check" id="chk-regex"></span><span>Enable Regex</span><span class="shortcut">Ctrl+R</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="help">
+      Help
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="showSyntaxHelp()"><span>Search Syntax</span><span class="shortcut">F1</span></div>
+        <div class="dropdown-item" onclick="showAbout()"><span>About Everything</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Toolbar -->
+  <div class="search-bar-wrap">
+    <div class="search-input-box">
+      <input type="text" id="searchInput" placeholder="Search files and folders... (e.g. *.pdf, size:>1mb, ext:png;jpg, !backup)" autofocus />
+      <button class="clear-btn" id="clearBtn" title="Clear search">✕</button>
+    </div>
+
+    <select class="filter-select" id="filterSelect" title="Filter by category">
+      <option value="all">Everything</option>
+      <option value="folder">Folder</option>
+      <option value="document">Document</option>
+      <option value="picture">Picture</option>
+      <option value="audio">Audio</option>
+      <option value="video">Video</option>
+      <option value="compressed">Compressed</option>
+      <option value="executable">Executable</option>
+    </select>
+
+    <select class="source-select" id="sourceSelect" title="Index source">
+      <option value="all">All Sources</option>
+      <option value="workspace">Workspace (/home/user)</option>
+      <option value="demo">Demo (C:\ &amp; D:\)</option>
+    </select>
+
+    <button class="toggle-btn" id="btnCase" title="Match Case (Ctrl+I)" onclick="toggleOpt('matchCase')">Aa</button>
+    <button class="toggle-btn" id="btnPath" title="Match Path (Ctrl+U)" onclick="toggleOpt('matchPath')">Path</button>
+    <button class="toggle-btn" id="btnRegex" title="Enable Regex (Ctrl+R)" onclick="toggleOpt('useRegex')">.*</button>
+  </div>
+
+  <!-- Results Table -->
+  <div class="table-container" id="tableContainer">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 28%" data-sort="name">Name</th>
+          <th style="width: 38%" data-sort="path">Path</th>
+          <th style="width: 11%" class="num-col" data-sort="size">Size</th>
+          <th style="width: 15%" data-sort="mtime">Date Modified</th>
+          <th style="width: 8%" data-sort="ext">Type</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="statusbar">
+    <div class="status-left">
+      <span id="statusCount">Loading index...</span>
+      <span id="statusTime"></span>
+      <span id="statusSelected"></span>
+    </div>
+    <div class="status-right" id="statusMods"></div>
+  </div>
+
+  <!-- Context Menu -->
+  <div class="context-menu" id="contextMenu">
+    <div class="dropdown-item" onclick="previewSelected()">Open / Preview</div>
+    <div class="dropdown-item" onclick="copySelectedPath()">Copy Full Path</div>
+    <div class="dropdown-item" onclick="copySelectedName()">Copy Name</div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="modalTitle">Preview</span>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    let allItems = [];
+    let filteredItems = [];
+    let selectedIndex = -1;
+    let sortCol = 'name';
+    let sortDir = 1; // 1 asc, -1 desc
+    let renderLimit = 300;
+
+    const opts = {
+      matchCase: false,
+      matchWhole: false,
+      matchPath: false,
+      useRegex: false,
+      filter: 'all',
+      source: 'all',
+    };
+
+    const CATEGORIES = {
+      document: new Set(['txt', 'md', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'json', 'xml', 'html', 'css', 'js', 'ts', 'tsx', 'py']),
+      picture: new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico']),
+      audio: new Set(['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a']),
+      video: new Set(['mp4', 'mkv', 'avi', 'mov', 'wmv', 'webm']),
+      compressed: new Set(['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'iso']),
+      executable: new Set(['exe', 'msi', 'bat', 'cmd', 'sh', 'app']),
+    };
+
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearBtn');
+    const resultsBody = document.getElementById('resultsBody');
+    const statusCount = document.getElementById('statusCount');
+    const statusTime = document.getElementById('statusTime');
+    const statusSelected = document.getElementById('statusSelected');
+    const statusMods = document.getElementById('statusMods');
+    const contextMenu = document.getElementById('contextMenu');
+
+    async function loadIndex() {
+      statusCount.textContent = 'Indexing...';
+      const res = await fetch(`/api/index?source=${opts.source}`);
+      const data = await res.json();
+      allItems = data.items;
+      runSearch();
+    }
+
+    function reindex() {
+      loadIndex();
+    }
+
+    function parseSizeValue(str) {
+      const m = str.match(/^(\d+(?:\.\d+)?)(b|kb|mb|gb)?$/i);
+      if (!m) return null;
+      const num = parseFloat(m[1]);
+      const unit = (m[2] || 'b').toLowerCase();
+      const mult = { b: 1, kb: 1024, mb: 1048576, gb: 1073741824 }[unit] || 1;
+      return num * mult;
+    }
+
+    function wildcardToRegex(pattern) {
+      const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*/g, '.*')
+        .replace(/\?/g, '.');
+      return new RegExp('^' + escaped + '$', opts.matchCase ? '' : 'i');
+    }
+
+    function matchTerm(item, rawTerm) {
+      let term = rawTerm;
+      let negate = false;
+      if (term.startsWith('!') && term.length > 1) {
+        negate = true;
+        term = term.slice(1);
+      }
+
+      let matched = false;
+      const lowerTerm = term.toLowerCase();
+
+      // ext:pdf;docx
+      if (lowerTerm.startsWith('ext:')) {
+        const exts = lowerTerm.slice(4).split(';').filter(Boolean);
+        matched = !item.isDir && exts.includes(item.ext);
+      }
+      // size:>1mb or size:<100kb
+      else if (lowerTerm.startsWith('size:')) {
+        const expr = lowerTerm.slice(5);
+        const op = expr.startsWith('>=') || expr.startsWith('<=') ? expr.slice(0, 2) :
+                   expr.startsWith('>') || expr.startsWith('<') ? expr[0] : '=';
+        const val = parseSizeValue(expr.slice(op.length));
+        if (val !== null && !item.isDir) {
+          if (op === '>') matched = item.size > val;
+          else if (op === '>=') matched = item.size >= val;
+          else if (op === '<') matched = item.size < val;
+          else if (op === '<=') matched = item.size <= val;
+          else matched = item.size === val;
+        }
+      }
+      // dm:today / dm:thisweek
+      else if (lowerTerm === 'dm:today') {
+        matched = (Date.now() - item.mtime) < 86400000;
+      } else if (lowerTerm === 'dm:thisweek') {
+        matched = (Date.now() - item.mtime) < 7 * 86400000;
+      }
+      // regex:
+      else if (lowerTerm.startsWith('regex:') || opts.useRegex) {
+        const pat = lowerTerm.startsWith('regex:') ? term.slice(6) : term;
+        try {
+          const re = new RegExp(pat, opts.matchCase ? '' : 'i');
+          const target = opts.matchPath ? item.fullPath : item.name;
+          matched = re.test(target);
+        } catch {
+          matched = false;
+        }
+      }
+      // Wildcards
+      else if (term.includes('*') || term.includes('?')) {
+        const re = wildcardToRegex(term);
+        const target = opts.matchPath ? item.fullPath : item.name;
+        matched = re.test(target);
+      }
+      // Standard text match
+      else {
+        const target = opts.matchPath ? item.fullPath : item.name;
+        if (opts.matchWhole) {
+          const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, opts.matchCase ? '' : 'i');
+          matched = re.test(target);
+        } else {
+          matched = opts.matchCase
+            ? target.includes(term)
+            : target.toLowerCase().includes(lowerTerm);
+        }
+      }
+
+      return negate ? !matched : matched;
+    }
+
+    function runSearch() {
+      const t0 = performance.now();
+      const query = searchInput.value.trim();
+      clearBtn.classList.toggle('visible', query.length > 0);
+
+      // Category filter
+      let base = allItems;
+      if (opts.filter !== 'all') {
+        if (opts.filter === 'folder') {
+          base = base.filter(i => i.isDir);
+        } else {
+          const set = CATEGORIES[opts.filter];
+          base = base.filter(i => !i.isDir && set.has(i.ext));
+        }
+      }
+
+      // Query filter (supports OR via | and AND via spaces)
+      if (query) {
+        const orGroups = query.split('|').map(g => g.trim()).filter(Boolean);
+        filteredItems = base.filter(item => {
+          return orGroups.some(group => {
+            const terms = group.match(/"[^"]+"|\S+/g) || [];
+            return terms.every(t => matchTerm(item, t.replace(/^"|"$/g, '')));
+          });
+        });
+      } else {
+        filteredItems = base.slice();
+      }
+
+      // Sort
+      filteredItems.sort((a, b) => {
+        if (a.isDir !== b.isDir && sortCol === 'name') {
+          return a.isDir ? -1 : 1;
+        }
+        let va = a[sortCol], vb = b[sortCol];
+        if (typeof va === 'string') {
+          return va.localeCompare(vb) * sortDir;
+        }
+        return (va - vb) * sortDir;
+      });
+
+      const elapsed = (performance.now() - t0).toFixed(2);
+      renderTable(query);
+
+      const folders = filteredItems.filter(i => i.isDir).length;
+      const files = filteredItems.length - folders;
+      statusCount.textContent = `${filteredItems.length.toLocaleString()} objects (${folders.toLocaleString()} folders, ${files.toLocaleString()} files)`;
+      statusTime.textContent = `Search: ${elapsed} ms`;
+      updateModBadges();
+    }
+
+    function formatSize(bytes, isDir) {
+      if (isDir) return '';
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+      if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
+      return `${(bytes / 1073741824).toFixed(2)} GB`;
+    }
+
+    function formatDate(ms) {
+      const d = new Date(ms);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getIcon(item) {
+      if (item.isDir) {
+        return `<svg class="file-icon" viewBox="0 0 24 24" fill="#f0b429"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`;
+      }
+      const color = CATEGORIES.picture.has(item.ext) ? '#10b981' :
+                    CATEGORIES.audio.has(item.ext) ? '#8b5cf6' :
+                    CATEGORIES.video.has(item.ext) ? '#ec4899' :
+                    CATEGORIES.compressed.has(item.ext) ? '#f59e0b' :
+                    CATEGORIES.executable.has(item.ext) ? '#ef4444' : '#3b82f6';
+      return `<svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightText(text, query) {
+      const safe = escapeHtml(text);
+      if (!query) return safe;
+      const simpleTerms = query.split(/[\s|]+/)
+        .map(t => t.replace(/^!/, '').replace(/^"|"$/g, ''))
+        .filter(t => t && !t.includes(':') && !t.includes('*') && !t.includes('?'));
+      if (!simpleTerms.length) return safe;
+      try {
+        const re = new RegExp(`(${simpleTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, opts.matchCase ? 'g' : 'gi');
+        return safe.replace(re, '<mark>$1</mark>');
+      } catch {
+        return safe;
+      }
+    }
+
+    function renderTable(query) {
+      const slice = filteredItems.slice(0, renderLimit);
+      resultsBody.innerHTML = slice.map((item, idx) => `
+        <tr data-idx="${idx}" class="${idx === selectedIndex ? 'selected' : ''}">
+          <td><div class="name-cell">${getIcon(item)}<span>${highlightText(item.name, query)}</span></div></td>
+          <td title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</td>
+          <td class="num-col">${formatSize(item.size, item.isDir)}</td>
+          <td>${formatDate(item.mtime)}</td>
+          <td>${item.isDir ? 'Folder' : (item.ext ? item.ext.toUpperCase() : 'File')}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Event Listeners
+    searchInput.addEventListener('input', () => {
+      selectedIndex = -1;
+      runSearch();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchInput.focus();
+      runSearch();
+    });
+
+    document.getElementById('filterSelect').addEventListener('change', (e) => {
+      setFilter(e.target.value);
+    });
+
+    document.getElementById('sourceSelect').addEventListener('change', (e) => {
+      opts.source = e.target.value;
+      loadIndex();
+    });
+
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (sortCol === col) sortDir *= -1;
+        else { sortCol = col; sortDir = 1; }
+        document.querySelectorAll('th').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+        th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+        runSearch();
+      });
+    });
+
+    resultsBody.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      selectedIndex = parseInt(tr.dataset.idx, 10);
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+      tr.classList.add('selected');
+      const item = filteredItems[selectedIndex];
+      statusSelected.textContent = item ? `Selected: ${item.fullPath}` : '';
+    });
+
+    resultsBody.addEventListener('dblclick', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      selectedIndex = parseInt(tr.dataset.idx, 10);
+      previewSelected();
+    });
+
+    resultsBody.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      selectedIndex = parseInt(tr.dataset.idx, 10);
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+      tr.classList.add('selected');
+      contextMenu.style.left = `${e.clientX}px`;
+      contextMenu.style.top = `${e.clientY}px`;
+      contextMenu.classList.add('visible');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.context-menu')) {
+        contextMenu.classList.remove('visible');
+      }
+      if (!e.target.closest('.menu-item')) {
+        document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('open'));
+      }
+    });
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.dropdown-item')) return;
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'i') { e.preventDefault(); toggleOpt('matchCase'); }
+      if (e.ctrlKey && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleOpt('matchWhole'); }
+      if (e.ctrlKey && e.key.toLowerCase() === 'u') { e.preventDefault(); toggleOpt('matchPath'); }
+      if (e.ctrlKey && e.key.toLowerCase() === 'r') { e.preventDefault(); toggleOpt('useRegex'); }
+      if (e.key === 'F1') { e.preventDefault(); showSyntaxHelp(); }
+      if (e.key === 'F5') { e.preventDefault(); reindex(); }
+      if (e.key === 'Escape') { closeModal(); }
+    });
+
+    function toggleOpt(key) {
+      opts[key] = !opts[key];
+      document.getElementById('btnCase').classList.toggle('active', opts.matchCase);
+      document.getElementById('btnPath').classList.toggle('active', opts.matchPath);
+      document.getElementById('btnRegex').classList.toggle('active', opts.useRegex);
+      document.getElementById('chk-case').textContent = opts.matchCase ? '✓' : '';
+      document.getElementById('chk-whole').textContent = opts.matchWhole ? '✓' : '';
+      document.getElementById('chk-path').textContent = opts.matchPath ? '✓' : '';
+      document.getElementById('chk-regex').textContent = opts.useRegex ? '✓' : '';
+      runSearch();
+    }
+
+    function setFilter(f) {
+      opts.filter = f;
+      document.getElementById('filterSelect').value = f;
+      ['all', 'folder', 'document', 'picture', 'audio', 'video'].forEach(k => {
+        const el = document.getElementById(`chk-f-${k}`);
+        if (el) el.textContent = (k === f) ? '✓' : '';
+      });
+      runSearch();
+    }
+
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark');
+      document.getElementById('chk-dark').textContent = isDark ? '✓' : '';
+    }
+
+    function updateModBadges() {
+      const badges = [];
+      if (opts.matchCase) badges.push('CASE');
+      if (opts.matchWhole) badges.push('WHOLE WORD');
+      if (opts.matchPath) badges.push('PATH');
+      if (opts.useRegex) badges.push('REGEX');
+      statusMods.innerHTML = badges.map(b => `<span class="mod-badge">${b}</span>`).join('');
+    }
+
+    function copySelectedPath() {
+      const item = filteredItems[selectedIndex];
+      if (item) navigator.clipboard.writeText(item.fullPath);
+    }
+
+    function copySelectedName() {
+      const item = filteredItems[selectedIndex];
+      if (item) navigator.clipboard.writeText(item.name);
+    }
+
+    async function previewSelected() {
+      const item = filteredItems[selectedIndex];
+      if (!item) return;
+      if (item.source !== 'workspace') {
+        openModal(item.name, `<p><strong>Path:</strong> ${escapeHtml(item.fullPath)}</p><p><strong>Size:</strong> ${formatSize(item.size, item.isDir) || 'Folder'}</p><p style="margin-top:8px;color:var(--text-muted)">Demo filesystem item (read-only metadata).</p>`);
+        return;
+      }
+      const res = await fetch(`/api/file?path=${encodeURIComponent(item.fullPath)}`);
+      const data = await res.json();
+      if (data.type === 'text') {
+        openModal(item.name, `<pre>${escapeHtml(data.content)}</pre>`);
+      } else if (data.type === 'dir') {
+        openModal(item.name, `<p><strong>Folder contents:</strong></p><pre>${escapeHtml(data.entries.join('\n'))}</pre>`);
+      } else {
+        openModal(item.name, `<p>${escapeHtml(data.message || data.error)}</p>`);
+      }
+    }
+
+    function exportCSV() {
+      const rows = [['Name', 'Path', 'Size', 'Date Modified', 'Type']];
+      filteredItems.forEach(i => {
+        rows.push([i.name, i.fullPath, i.size, new Date(i.mtime).toISOString(), i.isDir ? 'Folder' : i.ext]);
+      });
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'everything_export.csv';
+      a.click();
+    }
+
+    function openModal(title, html) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = html;
+      document.getElementById('modalBackdrop').classList.add('visible');
+    }
+
+    function closeModal() {
+      document.getElementById('modalBackdrop').classList.remove('visible');
+    }
+
+    function showSyntaxHelp() {
+      openModal('Everything Search Syntax', `
+        <div class="syntax-grid">
+          <div class="syntax-code">a b</div><div>Matches both <b>a</b> AND <b>b</b></div>
+          <div class="syntax-code">a | b</div><div>Matches <b>a</b> OR <b>b</b></div>
+          <div class="syntax-code">!a</div><div>Excludes <b>a</b> (NOT)</div>
+          <div class="syntax-code">*.pdf</div><div>Wildcard matching</div>
+          <div class="syntax-code">ext:jpg;png</div><div>Match specific extensions</div>
+          <div class="syntax-code">size:&gt;1mb</div><div>Files larger than 1 MB (b, kb, mb, gb)</div>
+          <div class="syntax-code">dm:today</div><div>Modified today (or <code>dm:thisweek</code>)</div>
+          <div class="syntax-code">regex:^IMG_</div><div>Regular expression match</div>
+        </div>
+      `);
+    }
+
+    function showAbout() {
+      openModal('About Everything (Web Clone)', `
+        <p><strong>Everything Search Engine — Web Edition</strong></p>
+        <p style="margin-top:8px">A faithful web replica of Voidtools Everything, featuring instant real-time file &amp; folder search, wildcard &amp; regex support, size/date filters, sortable columns, dark mode, and CSV export.</p>
+      `);
+    }
+
+    loadIndex();
+  </script>
+</body>
+</html>
