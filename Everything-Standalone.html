@@ -520,15 +520,15 @@
     function openSelected() {
       const item = filteredItems[selectedIndex];
       if (!item) return;
-      const url = 'file:///' + item.fullPath.replace(/\\/g, '/');
-      window.open(url, '_blank');
+      fetch('http://127.0.0.1:45678/open?path=' + encodeURIComponent(item.fullPath))
+        .catch(() => window.open('file:///' + item.fullPath.replace(/\\/g, '/'), '_blank'));
     }
 
     function openSelectedPath() {
       const item = filteredItems[selectedIndex];
       if (!item) return;
-      const url = 'file:///' + item.path.replace(/\\/g, '/');
-      window.open(url, '_blank');
+      fetch('http://127.0.0.1:45678/open?path=' + encodeURIComponent(item.path))
+        .catch(() => window.open('file:///' + item.path.replace(/\\/g, '/'), '_blank'));
     }
 
     function showProperties() {
@@ -613,7 +613,7 @@
       document.body.appendChild(s);
     }
 
-    setInterval(reloadPCIndex, 10000);
+    setInterval(reloadPCIndex, 3000);
     runSearch();
   </script>
 </body>
